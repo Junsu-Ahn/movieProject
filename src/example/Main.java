@@ -147,8 +147,3 @@ class Member {
         this.name = name;
     }
 }
-
-class myInfo {
-    List<String> myMovie = new ArrayList<>();
-
-}
