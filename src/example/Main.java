@@ -1,5 +1,4 @@
 package example;
-import example.Util;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,9 +8,9 @@ import java.io.IOException;
 import java.util.*;
 
 public class Main {
-    private static List<MovieInfo> movieList = new ArrayList<>();
-    private static List<Member> members = new ArrayList<>();
-    private static Scanner scanner = new Scanner(System.in);
+    public static List<MovieInfo> movieList = new ArrayList<>();
+    public static List<Member> members = new ArrayList<>();
+    public static Scanner scanner = new Scanner(System.in);
     public static int currentMemberIdx = -1;
     public static boolean isLogin = false;
     public static void main(String[] args) {
@@ -67,6 +66,13 @@ public class Main {
     }
 
     private static void memberJoin() {
+        if(isLogin)
+        {
+            System.out.print("로그아웃 하시겠습니까? Y/N ");
+            String b = scanner.nextLine();
+            if(b.toLowerCase().equals("n"))
+                return;
+        }
         int id = members.size() + 1;
         String regDate = Util.getNowDateStr();
         String loginId;
@@ -111,20 +117,17 @@ public class Main {
                 System.out.println("예매 가능한 좌석:");
                 String[] remainingSeats = movie.getRemainingSeats();
                 for (int i = 0; i < remainingSeats.length; i++) {
-                    if (!remainingSeats[i].equals("X")) {
                         System.out.print(remainingSeats[i] + " ");
-                    }
                 }
                 System.out.println();
 
                 System.out.print("좌석 선택: ");
                 int selectedSeat = Integer.parseInt(scanner.nextLine());
 
-                if (selectedSeat < 1 || selectedSeat > 10 || remainingSeats[selectedSeat - 1].equals("X")) {
+                if (selectedSeat < 1 || selectedSeat > 10){
                     System.out.println("잘못된 좌석 선택입니다.");
                     return;
                 }
-
                 remainingSeats[selectedSeat - 1] = "X";
                 members.get(currentMemberIdx).getMyMovie().put(movieTitle, selectedSeat);
                 System.out.println("예매가 완료되었습니다.");
@@ -155,14 +158,18 @@ public class Main {
             Member member = members.get(i);
             if (member.getLoginId().equals(loginId) && member.getLoginPw().equals(loginPw)) {
                 currentMemberIdx = i;
+                isLogin = true;
                 System.out.println("로그인 되었습니다.");
                 return;
             }
         }
         System.out.println("로그인 실패. 아이디 또는 비밀번호를 확인해주세요.");
     }
-
-    private static void myPage() {
+    public static void logout(){
+        currentMemberIdx = -1;
+        isLogin = false;
+    }
+    public static void myPage() {
         if (!isLogin) {
             System.out.println("로그인 후 이용해주세요.");
             return;
@@ -180,146 +187,39 @@ public class Main {
             System.out.println("2. 리뷰쓰기");
             System.out.println("3. 회원탈퇴");
             System.out.println("4. 리뷰삭제");
-            System.out.println("5. 이전으로");
+            System.out.println("5. 회원정보수정");
+            System.out.println("6. 이전으로");
             String m_cmd = scanner.nextLine();
 
             switch(m_cmd)
             {
                 case "1":
                 case "예매취소":
-                    cancelReservation();
+                    myPage.cancelReservation();
                     break;
                 case "2":
                 case "리뷰쓰기":
-                    writeReview();
+                    myPage.writeReview();
                     break;
                 case "3":
                 case "회원탈퇴":
-                    bye();
+                    myPage.bye();
                     break;
                 case "4":
                 case "리뷰삭제":
-                    cancelReview();
+                    myPage.cancelReview();
                     break;
                 case "5":
+                case "회원정보수정":
+                    myPage.fix();
+                    break;
+                case "6":
                 case "이전으로":
                     return;
                 default:
                     System.out.println("올바르지 않은 명령어 입니다");
             }
         }
-    }
-
-    private static void bye() {
-        if (!isLogin) {
-            System.out.println("로그인 후 이용해주세요.");
-            return;
-        }
-
-        System.out.print("비밀번호를 입력하세요: ");
-        String password = scanner.nextLine();
-
-        Member currentMember = members.get(currentMemberIdx);
-        if (!currentMember.getLoginPw().equals(password)) {
-            System.out.println("비밀번호가 일치하지 않습니다.");
-            return;
-        }
-
-        members.remove(currentMemberIdx);
-        System.out.println("탈퇴가 완료되었습니다.");
-        isLogin = false;
-        currentMemberIdx = -1;
-    }
-
-    private static void cancelReservation() {
-        if (!isLogin) {
-            System.out.println("로그인 후 이용해주세요.");
-            return;
-        }
-        System.out.println("예매 현황 : ");
-        for(String x : members.get(currentMemberIdx).getMyMovie().keySet())
-            System.out.println(x);
-        System.out.print("취소할 영화 제목: ");
-        String movieTitle = scanner.nextLine();
-        for (MovieInfo movie : movieList) {
-            if (movie.getTitle().equals(movieTitle)) {
-                Map<String, Integer> myMovie = members.get(currentMemberIdx).getMyMovie();
-                if (!myMovie.containsKey(movieTitle)) {
-                    System.out.println("해당 영화를 예매하지 않았습니다.");
-                    return;
-                }
-                myMovie.remove(movieTitle);
-                String[] remainingSeats = movie.getRemainingSeats();
-                for (int i = 0; i < remainingSeats.length; i++) {
-                    if (remainingSeats[i].equals("X")) {
-                        remainingSeats[i] = Integer.toString(i + 1);
-                        break;
-                    }
-                }
-                System.out.println("예매가 취소되었습니다.");
-                return;
-            }
-        }
-        System.out.println("해당 영화를 찾을 수 없습니다.");
-    }
-
-    private static void cancelReview() {
-        if (!isLogin) {
-            System.out.println("로그인 후 이용해주세요.");
-            return;
-        }
-        System.out.println("나의 리뷰 현황 : ");
-        for (Map.Entry<String, Integer> entry : members.get(currentMemberIdx).getMyReview().entrySet()) {
-            System.out.println(entry.getKey() + "  " + entry.getValue());
-        }
-        System.out.print("삭제할 리뷰의 영화제목 입력 : ");
-        String x = scanner.nextLine();
-        for (MovieInfo movie : movieList) {
-            if (movie.getTitle().equals(x)) {
-                movie.minusRating(members.get(currentMemberIdx).getMyReview().get(x));
-                members.get(currentMemberIdx).getMyReview().remove(x);
-            }
-        }
-        System.out.println("삭제 완료");
-        System.out.println("나의 리뷰 현황 : ");
-        for (Map.Entry<String, Integer> entry : members.get(currentMemberIdx).getMyReview().entrySet()) {
-            System.out.println(entry.getKey() + "  " + entry.getValue());
-        }
-    }
-
-    private static void writeReview(){
-        if (!isLogin) {
-            System.out.println("로그인 후 이용해주세요.");
-            return;
-        }
-        System.out.println("예매 현황 : ");
-        for(String x : members.get(currentMemberIdx).getMyMovie().keySet())
-                System.out.println(x);
-
-        System.out.print("리뷰를 작성할 영화 제목: ");
-        String movieTitle = scanner.nextLine();
-        for (MovieInfo movie : movieList) {
-            if (movie.getTitle().equals(movieTitle)) {
-                System.out.print("평점을 입력하세요 (1~5점): ");
-                int rating = Integer.parseInt(scanner.nextLine());
-                if (rating < 1 || rating > 5) {
-                    System.out.println("1부터 5까지의 점수를 입력해주세요.");
-                    return;
-                }
-                movie.addRating(rating);
-                System.out.println("리뷰가 작성되었습니다.");
-
-                // 리뷰 작성이 끝나면 영화좌석을 다시 인덱스로 변경
-                Map<String, Integer> myMovie = members.get(currentMemberIdx).getMyMovie();
-                int selectedSeat = myMovie.get(movieTitle);
-                movie.getRemainingSeats()[selectedSeat - 1] = Integer.toString(selectedSeat);
-
-                // myReview에 추가
-                members.get(currentMemberIdx).getMyReview().put(movieTitle, rating);
-                return;
-            }
-        }
-        System.out.println("해당 영화를 찾을 수 없습니다.");
     }
 
     private static boolean isJoinableLoginId(String loginId) {
@@ -341,60 +241,16 @@ public class Main {
             String name = "User" + id;
             members.add(new Member(id, regDate, loginId, loginPw, name));
         }
-        currentMemberIdx = 2;
+        currentMemberIdx = members.size()-1;
         isLogin = true;
     }
 
 }
 
-class Member {
-    private int id;
-    private String regDate;
-    private String loginId;
-    private String loginPw;
-    private String name;
-    private Map<String, Integer> myMovie;
-    private Map<String, Integer> myReview;
-
-    public Member(int id, String regDate, String loginId, String loginPw, String name) {
-        this.id = id;
-        this.regDate = regDate;
-        this.loginId = loginId;
-        this.loginPw = loginPw;
-        this.name = name;
-        this.myMovie = new HashMap<>();
-        this.myReview = new HashMap<>();
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getLoginId() {
-        return loginId;
-    }
-
-    public String getLoginPw() {
-        return loginPw;
-    }
-
-    public Map<String, Integer> getMyMovie() {
-        return myMovie;
-    }
-
-    public Map<String, Integer> getMyReview(){
-        return myReview;
-    }
-}
-
 class MovieInfo implements Comparable<MovieInfo> {
-    private String title;
-    private Map<Integer, Integer> ratings;
-    private String[] remainingSeats;
+    public String title;
+    public Map<Integer, Integer> ratings;
+    public String[] remainingSeats;
 
     public MovieInfo(String title) {
         this.title = title;
@@ -408,10 +264,10 @@ class MovieInfo implements Comparable<MovieInfo> {
         }
     }
     public void addRating(int rating) {
-        ratings.put(rating, ratings.getOrDefault(rating, 0) + 1);
+        ratings.put(rating, ratings.get(rating) + 1);
     }
     public void minusRating(int rating) {
-        ratings.put(rating, ratings.getOrDefault(rating, 0) - 1);
+        ratings.put(rating, ratings.get(rating) - 1);
     }
     public double getRating() {
         double total = 0;
